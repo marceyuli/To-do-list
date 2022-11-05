@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-
+const _ =require("lodash");
 const app = express();
 
 mongoose.connect("mongodb://localhost:27017/todolistDB", {
@@ -49,7 +49,7 @@ app.get("/", function (req, res) {
   });
 });
 app.get("/:customListName", function (req, res) {
-  const customListName = req.params.customListName;
+  const customListName = _.capitalize(req.params.customListName);
   List.findOne({ name: customListName }, function (error, foundList) {
     if (!error) {
       if (!foundList) {
@@ -58,14 +58,15 @@ app.get("/:customListName", function (req, res) {
           items: defaultItems,
         });
         list.save();
-         res.redirect("/" + customListName);
-      } else{
-        res.render("list", { listTitle: foundList.name, newListItems: foundList.items });
+        res.redirect("/" + customListName);
+      } else {
+        res.render("list", {
+          listTitle: foundList.name,
+          newListItems: foundList.items,
+        });
       }
     }
   });
-
-  
 });
 app.post("/", function (req, res) {
   let itemName = req.body.newItem;
@@ -73,28 +74,37 @@ app.post("/", function (req, res) {
   const item = new Item({
     name: itemName,
   });
-  if(listName==="Today"){
-    item.save(function() {
+  if (listName === "Today") {
+    item.save(function () {
       res.redirect("/");
     });
-  }else{
-    List.findOne({name: listName}, function(error, foundList){
+  } else {
+    List.findOne({ name: listName }, function (error, foundList) {
       foundList.items.push(item);
-      foundList.save(function() {
+      foundList.save(function () {
         res.redirect("/" + listName);
       });
     });
   }
-  
 });
 app.post("/delete", function (req, res) {
   const checkedItemId = req.body.checkbox;
-  Item.findByIdAndRemove(checkedItemId, function (error) {
-    if (!error) {
-      console.log("Success");
-      res.redirect("/");
-    }
-  });
+  const listName = req.body.listName;
+
+  if (listName === "Today") {
+    Item.findByIdAndRemove(checkedItemId, function (error) {
+      if (!error) {
+        console.log("Success");
+        res.redirect("/");
+      }
+    });
+  }else{
+    List.findOneAndUpdate({name: listName},{$pull: {items: {_id:checkedItemId}}},function(err, foundList){
+      if(!err){
+        res.redirect("/" + listName);
+      }
+    })
+  }
 });
 
 app.get("/about", function (req, res) {

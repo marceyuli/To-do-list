@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const _ =require("lodash");
 const app = express();
 
-mongoose.connect("mongodb://localhost:27017/todolistDB", {
+mongoose.connect("mongodb+srv://imponicornio:Pelotillehue56@cluster0.wbm498d.mongodb.net/todolistDB", {
   useNewUrlParser: true,
 });
 
